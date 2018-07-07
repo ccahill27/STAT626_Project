@@ -1,0 +1,170 @@
+rm(list=ls())
+
+
+setwd(dirname(rstudioapi::getSourceEditorContext()$path))
+library(astsa)
+library(data.table)
+library(car)
+library(MASS)
+library(imputeTS)
+
+
+
+houston_daily<-read.csv('houston_daily_1962_2016.csv',header=TRUE)
+
+#Fit timeframe for mortality data
+
+houston_daily<-houston_daily[1:19965,]
+
+#Find missing dates
+
+DATEo<-seq(as.Date("1962/1/1"), as.Date("2016/10/01"), "day")
+x<-rep(5,length(DATEo))
+
+temp_days<-data.frame(DATEo,x)
+temp_days[1:10,]
+
+colnames(temp_days)<-c("DATE","FIVE")
+
+
+
+test_dates<-merge(temp_days,houston_daily,by="DATE",all.x=TRUE)
+
+
+test_dates[is.na(test_dates$End_of_Week),]
+
+#MISSING Dates completed. Second source downloaded and filled in. No Longer Missing Dates
+
+#Import Completed data file
+
+houston_daily<-read.csv('houston_daily_1962_2016.csv',header=TRUE)
+
+
+#Limit to timeframe for mortality data
+houston_daily<-houston_daily[1:19998,]
+
+
+#Make date class
+houston_daily$DATE<-as.Date(x=houston_daily$DATE,format='%m/%d/%Y')
+
+#Extract day of week 
+
+houston_daily$Week_Day<-as.numeric(format(houston_daily$DATE,format='%w'))
+
+
+#Adjust end-of-week
+
+houston_daily$End_of_Week<-houston_daily$DATE+(6-houston_daily$Week_Day)
+
+
+#Aggregate over week
+
+houston_weekly<-aggregate(PRCP ~ End_of_Week, FUN=sum, data=houston_daily, na.rm=FALSE)
+
+houston_weekly$TMAX<-aggregate(TMAX ~ End_of_Week, FUN=mean, data=houston_daily, na.rm=FALSE)[,2]
+
+houston_weekly$TMIN<-aggregate(TMIN ~ End_of_Week, FUN=mean, data=houston_daily, na.rm=FALSE)[,2]
+
+
+#Import Mortality Date
+
+mortality<-read.csv("Houston.csv",header=TRUE)
+
+colnames(mortality)<-c('Year','Week','End_of_Week','Region','State','City','Pneumonia_and_Flu_Deaths','All_Deaths','Ages_Less_Than_1','Ages_1_to_24','Ages_25_to_44','Ages_45_to_64','Ages_over_65')
+
+
+mortality$End_of_Week<-as.Date(mortality$End_of_Week,format='%m/%d/%Y')
+
+
+
+
+Houston_weekly_full_data<-merge(mortality,houston_weekly,by="End_of_Week",all.x=TRUE)
+
+
+write.csv(Houston_weekly_full_data,file="Houston_weekly_full_data.csv")
+
+
+
+
+
+
+#Now Chicago
+
+Full_mortality<-read.csv('Full_mortality.csv',header=TRUE)
+Chicago<-Full_mortality[Full_mortality$City=='Chicago',]
+
+
+colnames(Chicago)<-c('Year','Week','End_of_Week','Region','State','City','Pneumonia_and_Flu_Deaths','All_Deaths','Ages_Less_Than_1','Ages_1_to_24','Ages_25_to_44','Ages_45_to_64','Ages_over_65')
+
+
+Chicago$End_of_Week<-as.Date(Chicago$End_of_Week,format='%m/%d/%Y')
+
+#Import Weather
+#chicago_weather<-read.csv('Chicago_weather.csv',header=TRUE)
+Chicago_weather<-read.csv('ohare_weather.csv',header=TRUE)
+
+#Fit timeframe for mortality data
+
+chicago_daily<-Chicago_weather[1:19998,]
+
+
+
+#Aggregate over week
+
+chicago_weekly<-aggregate(PRCP ~ End_of_Week, FUN=sum, data=chicago_daily, na.rm=FALSE)
+
+chicago_weekly$TMAX<-aggregate(TMAX ~ End_of_Week, FUN=mean, data=chicago_daily, na.rm=FALSE)[,2]
+
+chicago_weekly$TMIN<-aggregate(TMIN ~ End_of_Week, FUN=mean, data=chicago_daily, na.rm=FALSE)[,2]
+
+#Merge
+
+
+Chicago_weekly_full_data<-merge(Chicago,chicago_weekly,by="End_of_Week",all.x=TRUE)
+write.csv(Chicago_weekly_full_data,file="Chicago_weekly_full_data.csv")
+
+
+
+
+
+
+
+
+
+##APPENDIX, ALL MISSING VALUES FOUND TO BE COMPLETE
+#Find missing dates
+
+#Make date class
+chicago_daily$DATE<-as.Date(x=chicago_daily$DATE)
+
+#Extract day of week 
+
+chicago_daily$Week_Day<-as.numeric(format(chicago_daily$DATE,format='%w'))
+
+
+#Adjust end-of-week
+
+chicago_daily$End_of_Week<-chicago_daily$DATE+(6-chicago_daily$Week_Day)
+
+
+
+
+DATEo<-seq(as.Date("1962/1/1"), as.Date("2016/10/01"), "day")
+x<-rep(5,length(DATEo))
+
+temp_days<-data.frame(DATEo,x)
+temp_days[1:10,]
+
+colnames(temp_days)<-c("DATE","FIVE")
+
+
+test_dates<-merge(temp_days,chicago_daily,by="DATE",all.x=TRUE)
+
+
+test_dates[is.na(test_dates$End_of_Week),]
+
+#MISSING Dates completed. Second source downloaded and filled in. No Longer Missing Dates
+
+
+
+

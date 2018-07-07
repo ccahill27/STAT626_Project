@@ -1,0 +1,120 @@
+setwd(dirname(rstudioapi::getSourceEditorContext()$path))
+library(astsa)
+library(data.table)
+
+
+city='Houston'
+begin=1990
+end=2016
+
+
+
+death<-read.csv(paste(city,'.csv',sep=''),header=TRUE)
+
+
+#Convert Week date to date format
+death$Week.Ending.Date <- as.Date(death$Week.Ending.Date, "%m/%d/%Y")
+
+
+#Remove unneeded variables
+death<-death[,c(3,7,8)]
+
+
+
+#Remove Day and Week
+death$Month<-substr(death$Week.Ending.Date,1,7)
+death<-death[,c(4,2,3)]
+
+
+
+
+
+
+#Make NA values 0
+#Yes, I know this is not the same
+#But this will be easier to sum in next step
+
+for(i in 1:nrow(death)){
+  if(is.na(death$All.Deaths[i])){
+    death$All.Deaths[i]=0
+  }
+}
+for(i in 1:nrow(death)){
+  if(is.na(death$Pneumonia.and.Influenza.Deaths[i])){
+    death$Pneumonia.and.Influenza.Deaths[i]=0
+  }
+}
+
+#Merge months
+death<-data.table(death)
+death2<-death[, lapply(.SD, sum), by=list(death$Month)]
+colnames(death2)[1]<-"MONTH"
+
+
+##Import Weather Data
+
+weather<-read.csv('houston_temp.csv',header=TRUE)
+weather<-weather[,c(3:7)]
+
+#Change colname
+weather$MONTH <- weather$DATE
+weather<-weather[,c(6,2:5)]
+
+
+
+
+#Merge weather and death2
+mortality<-merge(death2,weather,by="MONTH")
+
+
+##Export table (done once)
+#write.csv(mortality,file="Houston_mortality.csv")
+
+
+
+
+
+
+
+
+
+#Subset Data
+
+mortality<-mortality[as.numeric(substr(mortality$MONTH,1,4))>=begin & as.numeric(substr(mortality$MONTH,1,4))<=end,]
+
+
+
+
+#Plot by Month 
+par(mfrow=c(2,2))
+val<-
+  tsplot(mortality$All.Deaths,main=paste(city,'by Month,',begin,'to',end))
+abline(lm(mortality$All.Deaths~c(1:nrow(mortality))),col='red',lty=2)
+acf(mortality$All.Deaths)
+
+
+
+
+tsplot(mortality$Pneumonia.and.Influenza.Deaths,main=paste(city,'Pneumonia/Flu by Month,',begin,'to',end))
+abline(lm(mortality$Pneumonia.and.Influenza.Deaths~c(1:nrow(mortality))),col='red',lty=2)
+acf(mortality$Pneumonia.and.Influenza.Deaths)
+
+
+
+
+#Plot temp and precip
+
+
+tsplot(mortality$PRCP,main=paste(city,'Precipitation by Month,',begin,'to',end))
+abline(lm(mortality$PRCP~c(1:nrow(mortality))),col='red',lty=2)
+acf(mortality$PRCP)
+
+
+
+tsplot(mortality$TAVG,main=paste(city,'Avg. Temp by Month,',begin,'to',end))
+abline(lm(mortality$TAVG~c(1:nrow(mortality))),col='red',lty=2)
+acf(mortality$TAVG)
+
+
+
+
