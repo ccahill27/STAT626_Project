@@ -40,8 +40,8 @@ dlp<-diff(lp)
 sarima(lp,0,1,1, 0,1,1,12)
 title('Philadelphia                                                             ')
 
-
-
+fit.p<-arima(lp,order=c(0,1,1),seasonal=list(order=c(0,1,1),12))
+Box.test(fit.p,type='Ljung-Box')
 
 ########################################
 ###########   HOUSTON  MODEL ###########
@@ -88,7 +88,7 @@ hf<-houston.future$Pneumonia_and_Flu_Deaths
 p1<-0
 d<-1
 q<-1
-P<-3
+P<-2
 D<-1
 Q<- 3 
 
